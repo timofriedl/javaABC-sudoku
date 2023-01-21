@@ -3,8 +3,8 @@ package de.javaabc.sudoku;
 import de.javaabc.sudoku.math.matrix.RowColumnMatrix;
 
 import java.awt.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class Sudoku extends RowColumnMatrix<IntBucket> {
@@ -15,6 +15,9 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
 
     private Sudoku(int blockWidth, int blockHeight, boolean init) {
         super(blockWidth * blockHeight, blockWidth * blockHeight);
+        if (blockWidth < 1 || blockHeight < 1)
+            throw new IllegalArgumentException("Sudoku must have block size of at least 1x1");
+
         this.blockWidth = blockWidth;
         this.blockHeight = blockHeight;
         radix = blockWidth * blockHeight;
@@ -23,23 +26,27 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
         for (int i = 0; i < radix; i++)
             blocks.add(new ArrayList<>(radix));
 
-        if (init)
-            for (int y = 0; y < radix; y++)
-                for (int x = 0; x < radix; x++)
-                    setAdd(x, y, new IntBucket(1, radix + 1));
+        if (init) for (int y = 0; y < radix; y++)
+            for (int x = 0; x < radix; x++)
+                setAdd(x, y, new IntBucket(1, radix + 1));
 
     }
 
-    private static int guessBlockSize(int size) {
-        return (int) Math.round(Math.sqrt(size));
+    private static int[] guessBlockSize(int size) {
+        int width = size, height = 1;
+        for (int w = width, h = height; h <= w; h++, w = size / h)
+            if (w * h == size) {
+                width = w;
+                height = h;
+            }
+        return new int[]{width, height};
     }
 
     public Sudoku(int[][] knownNumbers) {
-        this(guessBlockSize(knownNumbers.length), guessBlockSize(knownNumbers.length), true);
+        this(guessBlockSize(knownNumbers.length)[0], guessBlockSize(knownNumbers.length)[1], true);
         for (int y = 0; y < getHeight(); y++)
             for (int x = 0; x < getWidth(); x++)
-                if (knownNumbers[y][x] > 0)
-                    setNumber(x, y, knownNumbers[y][x]);
+                if (knownNumbers[y][x] > 0) setNumber(x, y, knownNumbers[y][x]);
     }
 
     private static int[][] parseHex(String hexString) {
@@ -50,8 +57,7 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
             String row = rows[y].toLowerCase();
             for (int x = 0; x < 16; x++) {
                 char c = row.charAt(x);
-                result[y][x] = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ?
-                        Integer.parseInt(Character.toString(c), 16) + 1 : 0;
+                result[y][x] = (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') ? Integer.parseInt(Character.toString(c), 16) + 1 : 0;
             }
         }
         return result;
@@ -106,14 +112,10 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
         for (int y = 0; y < getHeight(); y++)
             for (int x = 0; x < getWidth(); x++) {
                 var bucket = get(x, y);
-                if (!bucket.isDefined())
-                    possibleNumbersByPosition.put(new Point(x, y), bucket.size());
+                if (!bucket.isDefined()) possibleNumbersByPosition.put(new Point(x, y), bucket.size());
             }
 
-        return possibleNumbersByPosition.entrySet()
-                .stream()
-                .min(Comparator.comparingInt(Map.Entry::getValue))
-                .map(Map.Entry::getKey);
+        return possibleNumbersByPosition.entrySet().stream().min(Comparator.comparingInt(Map.Entry::getValue)).map(Map.Entry::getKey);
     }
 
     public Sudoku cloneModify(int x, int y, int number) {
@@ -123,10 +125,7 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
     }
 
     private Stream<int[]> streamKnownNumbers() {
-        return streamRows().map(row -> row.stream()
-                .mapToInt(IntBucket::getDefinedNumber)
-                .toArray()
-        );
+        return streamRows().map(row -> row.stream().mapToInt(IntBucket::getDefinedNumber).toArray());
     }
 
     private String numberToString(int number) {
@@ -134,9 +133,7 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
     }
 
     private String rowToString(int[] row) {
-        List<String> rowList = Arrays.stream(row)
-                .mapToObj(n -> n == 0 ? " " : numberToString(n))
-                .toList();
+        List<String> rowList = Arrays.stream(row).mapToObj(n -> n == 0 ? " " : numberToString(n)).toList();
 
         String[] blockParts = new String[blockHeight];
         for (int blockX = 0; blockX < blockParts.length; blockX++)
@@ -150,9 +147,7 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
         String[] rowSepLines = new String[blockHeight];
         Arrays.fill(rowSepLines, "─".repeat((blockWidth - 1) * 3 + 5));
 
-        List<String> rowsList = streamKnownNumbers()
-                .map(this::rowToString)
-                .toList();
+        List<String> rowsList = streamKnownNumbers().map(this::rowToString).toList();
 
         String firstRowSep = "┌" + String.join("┬", rowSepLines) + "┐\n";
         String rowSep = "├" + String.join("┼", rowSepLines) + "┤\n";
