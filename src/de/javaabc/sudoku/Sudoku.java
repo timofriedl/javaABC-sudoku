@@ -3,10 +3,8 @@ package de.javaabc.sudoku;
 import de.javaabc.sudoku.math.matrix.RowColumnMatrix;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 public class Sudoku extends RowColumnMatrix<IntBucket> {
@@ -104,11 +102,18 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
     }
 
     public Optional<Point> findEmptyPosition() {
+        Map<Point, Integer> possibleNumbersByPosition = new HashMap<>();
         for (int y = 0; y < getHeight(); y++)
-            for (int x = 0; x < getWidth(); x++)
-                if (!get(x, y).isDefined())
-                    return Optional.of(new Point(x, y));
-        return Optional.empty();
+            for (int x = 0; x < getWidth(); x++) {
+                var bucket = get(x, y);
+                if (!bucket.isDefined())
+                    possibleNumbersByPosition.put(new Point(x, y), bucket.size());
+            }
+
+        return possibleNumbersByPosition.entrySet()
+                .stream()
+                .min(Comparator.comparingInt(Map.Entry::getValue))
+                .map(Map.Entry::getKey);
     }
 
     public Sudoku cloneModify(int x, int y, int number) {

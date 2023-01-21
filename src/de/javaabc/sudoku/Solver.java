@@ -111,7 +111,7 @@ public class Solver {
                 .4..1..........B""");
 
         long startTime = System.currentTimeMillis();
-        Optional<Sudoku> result = solver.solve(sudoku2, false);
+        Optional<Sudoku> result = solver.solve(sudoku3, false);
         long stopTime = System.currentTimeMillis();
 
         result.ifPresentOrElse(System.out::println, () -> System.out.println("No solution found."));

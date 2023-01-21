@@ -19,6 +19,10 @@ public class IntBucket {
         numbers.addAll(toCopy.numbers);
     }
 
+    public int size() {
+        return numbers.size();
+    }
+
     public boolean remove(int number) {
         return numbers.remove(number);
     }
