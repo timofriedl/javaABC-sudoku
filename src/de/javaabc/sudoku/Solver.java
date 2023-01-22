@@ -3,6 +3,7 @@ package de.javaabc.sudoku;
 import java.awt.*;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class Solver {
@@ -22,14 +23,14 @@ public class Solver {
         return dimensions.map(this::trivialStep).reduce(false, (res, cur) -> res | cur);
     }
 
-    public Optional<Sudoku> solve(Sudoku sudoku, boolean print) {
-        if (print)
-            System.out.println(sudoku);
+    public Optional<Sudoku> solve(Sudoku sudoku, Consumer<Sudoku> onProgress) {
+        if (onProgress != null)
+            onProgress.accept(sudoku);
 
         if (trivialStep(sudoku.streamRows())
                 | trivialStep(sudoku.streamColumns())
                 | trivialStep(sudoku.streamBlocks()))
-            return solve(sudoku, print);
+            return solve(sudoku, onProgress);
 
         if (sudoku.isInvalid())
             return Optional.empty();
@@ -39,15 +40,16 @@ public class Solver {
 
         Optional<Point> p = sudoku.findEmptyPosition();
         if (p.isEmpty())
-            return solve(sudoku, print);
+            return solve(sudoku, onProgress);
 
-        int x = p.get().x;
-        int y = p.get().y;
+        Point point = p.get();
+        int x = point.x;
+        int y = point.y;
 
         return sudoku.get(x, y)
                 .stream()
                 .mapToObj(number -> sudoku.cloneModify(x, y, number))
-                .map(modifiedSudoku -> solve(modifiedSudoku, print))
+                .map(modifiedSudoku -> solve(modifiedSudoku, onProgress))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .findAny();
@@ -56,9 +58,9 @@ public class Solver {
     public static void main(String[] args) {
         var solver = new Solver();
 
-        var sudoku0 = new Sudoku(new int[][]{
-                {8, 0, 5, 3, 0, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 2, 0},
+        var hardestSudoku = new Sudoku(new int[][]{
+                {0, 0, 5, 3, 0, 0, 0, 0, 0},
+                {8, 0, 0, 0, 0, 0, 0, 2, 0},
                 {0, 7, 0, 0, 1, 0, 5, 0, 0},
                 {4, 0, 0, 0, 0, 5, 3, 0, 0},
                 {0, 1, 0, 0, 7, 0, 0, 0, 6},
@@ -68,7 +70,7 @@ public class Solver {
                 {0, 0, 0, 0, 0, 9, 7, 0, 0}
         });
 
-        var sudoku1 = new Sudoku(new int[][]{
+        var aiEscargot = new Sudoku(new int[][]{
                 {1, 0, 0, 0, 0, 7, 0, 9, 0},
                 {0, 3, 0, 0, 2, 0, 0, 0, 8},
                 {0, 0, 9, 6, 0, 0, 5, 0, 0},
@@ -80,7 +82,7 @@ public class Solver {
                 {0, 0, 7, 0, 0, 0, 3, 0, 0}
         });
 
-        var sudoku2 = new Sudoku(new int[][]{
+        var otherSudoku = new Sudoku(new int[][]{
                 {8, 0, 0, 0, 0, 0, 0, 0, 0},
                 {0, 0, 3, 6, 0, 0, 0, 0, 0},
                 {0, 7, 0, 0, 9, 0, 2, 0, 0},
@@ -92,7 +94,7 @@ public class Solver {
                 {0, 9, 0, 0, 0, 0, 4, 0, 0},
         });
 
-        var sudoku3 = new Sudoku("""
+        var hexadoku = new Sudoku("""
                 ..9.865...BF..D.
                 ......4F..D...0C
                 5.A8.E.......2..
@@ -111,7 +113,7 @@ public class Solver {
                 .4..1..........B""");
 
         long startTime = System.currentTimeMillis();
-        Optional<Sudoku> result = solver.solve(sudoku2, false);
+        Optional<Sudoku> result = solver.solve(hardestSudoku, null);
         long stopTime = System.currentTimeMillis();
 
         result.ifPresentOrElse(System.out::println, () -> System.out.println("No solution found."));

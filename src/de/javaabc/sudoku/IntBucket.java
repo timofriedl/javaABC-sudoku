@@ -52,6 +52,8 @@ public class IntBucket {
 
     @Override
     public String toString() {
-        return numbers.stream().map(Object::toString).collect(Collectors.joining(", ", "{", "}"));
+        return numbers.stream()
+                .map(Object::toString)
+                .collect(Collectors.joining(",", "[", "]"));
     }
 }

@@ -5,6 +5,7 @@ import de.javaabc.sudoku.math.matrix.RowColumnMatrix;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Sudoku extends RowColumnMatrix<IntBucket> {
@@ -158,5 +159,14 @@ public class Sudoku extends RowColumnMatrix<IntBucket> {
             parts[blockY] = String.join("", rowsList.subList(blockY * blockHeight, (blockY + 1) * blockHeight));
 
         return firstRowSep + String.join(rowSep, parts) + lastRowSep;
+    }
+
+    public String toListString() {
+        var collectListString = Collectors.joining(",", "[", "]");
+        return streamRows()
+                .map(row -> row.stream()
+                        .map(IntBucket::toString)
+                        .collect(collectListString)
+                ).collect(collectListString);
     }
 }
